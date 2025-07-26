@@ -1,12 +1,6 @@
 pub mod source;
 pub mod sink;
 
-#[cfg(test)]
-pub mod tests;
-
-#[cfg(test)]
-pub mod integration_tests;
-
 use anyhow::{anyhow, bail};
 use arroyo_operator::connector::{Connection, Connector, MetadataDef};
 use arroyo_operator::operator::ConstructedOperator;

@@ -17,7 +17,7 @@ use tokio::time::{interval, Instant};
 use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
-use super::{StartFrom};
+use crate::azure_cosmos_db::{StartFrom};
 
 #[derive(Debug, Clone)]
 pub struct AzureCosmosDbSourceFunc {
@@ -310,6 +310,105 @@ impl AzureCosmosDbSourceClient {
 mod tests {
     use super::*;
     use arroyo_rpc::formats::Format;
+    use arroyo_rpc::ConnectorOptions;
+    use arroyo_rpc::api_types::connections::ConnectionType;
+    use std::collections::HashMap;
+    use crate::azure_cosmos_db::{AzureCosmosDbConnector, AzureCosmosDbConfig, AzureCosmosDbTable, AzureCosmosDbTableType};
+
+    #[test]
+    fn test_connection_from_options() {
+        let mut options = ConnectorOptions::new(HashMap::from([
+            ("endpoint_url".to_string(), "https://test.documents.azure.com:443/".to_string()),
+            ("primary_key".to_string(), "test_key".to_string()),
+            ("database".to_string(), "testdb".to_string()),
+            ("container".to_string(), "testcontainer".to_string()),
+            ("throughput".to_string(), "1000".to_string()),
+        ]));
+
+        let config = AzureCosmosDbConnector::connection_from_options(&mut options).unwrap();
+        
+        assert_eq!(config.endpoint_url, "https://test.documents.azure.com:443/");
+        assert_eq!(config.database, "testdb");
+        assert_eq!(config.container, "testcontainer");
+        assert_eq!(config.throughput, Some(1000));
+    }
+
+    #[test]
+    fn test_table_from_options_source() {
+        let mut options = ConnectorOptions::new(HashMap::from([
+            ("type".to_string(), "source".to_string()),
+            ("source.start_from".to_string(), "beginning".to_string()),
+            ("source.leases_container".to_string(), "custom_leases".to_string()),
+            ("source.max_items_per_snapshot".to_string(), "5000".to_string()),
+        ]));
+
+        let table = AzureCosmosDbConnector::table_from_options(&mut options).unwrap();
+        
+        match table.r#type {
+            AzureCosmosDbTableType::Source { start_from, leases_container, max_items_per_snapshot } => {
+                assert!(matches!(start_from, StartFrom::Beginning));
+                assert_eq!(leases_container, "custom_leases");
+                assert_eq!(max_items_per_snapshot, 5000);
+            },
+            _ => panic!("Expected source table type"),
+        }
+    }
+
+    #[test]
+    fn test_connector_metadata() {
+        let connector = AzureCosmosDbConnector {};
+        let metadata = connector.metadata();
+        
+        assert_eq!(metadata.id, "azure_cosmos_db");
+        assert_eq!(metadata.name, "Azure Cosmos DB");
+        assert!(metadata.source);
+        assert!(metadata.sink);
+        assert!(metadata.enabled);
+        assert!(metadata.testing);
+    }
+
+    #[test]
+    fn test_connector_name() {
+        let connector = AzureCosmosDbConnector {};
+        assert_eq!(connector.name(), "azure_cosmos_db");
+    }
+
+    #[test]
+    fn test_config_description() {
+        let connector = AzureCosmosDbConnector {};
+        let config = AzureCosmosDbConfig {
+            endpoint_url: "https://test.documents.azure.com:443/".to_string(),
+            primary_key: VarStr::new("test_key".to_string()),
+            database: "testdb".to_string(),
+            container: "testcontainer".to_string(),
+            throughput: Some(1000),
+        };
+        
+        let description = connector.config_description(config);
+        assert_eq!(description, "testdb/testcontainer");
+    }
+
+    #[test]
+    fn test_table_type_source() {
+        let connector = AzureCosmosDbConnector {};
+        let config = AzureCosmosDbConfig {
+            endpoint_url: "https://test.documents.azure.com:443/".to_string(),
+            primary_key: VarStr::new("test_key".to_string()),
+            database: "testdb".to_string(),
+            container: "testcontainer".to_string(),
+            throughput: None,
+        };
+        let table = AzureCosmosDbTable {
+            r#type: AzureCosmosDbTableType::Source {
+                start_from: StartFrom::Now,
+                leases_container: "leases".to_string(),
+                max_items_per_snapshot: 10000,
+            },
+        };
+        
+        let table_type = connector.table_type(config, table);
+        assert_eq!(table_type, ConnectionType::Source);
+    }
 
     #[test]
     fn test_source_func_creation() {

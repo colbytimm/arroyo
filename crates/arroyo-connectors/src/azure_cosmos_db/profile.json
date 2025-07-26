@@ -35,5 +35,6 @@
             "examples": [400, 1000, 4000]
         }
     },
-    "required": ["endpointUrl", "primaryKey", "database", "container"]
+    "required": ["endpointUrl", "primaryKey", "database", "container"],
+    "sensitive": ["primaryKey"]
 }

@@ -1,0 +1,75 @@
+{
+    "type": "object",
+    "title": "AzureCosmosDbTable",
+    "properties": {
+        "type": {
+            "type": "object",
+            "title": "Table Type",
+            "oneOf": [
+                {
+                    "type": "object",
+                    "title": "Source",
+                    "properties": {
+                        "startFrom": {
+                            "type": "string",
+                            "title": "Start From",
+                            "description": "Where to start reading from the change feed",
+                            "enum": [
+                                "beginning",
+                                "now"
+                            ],
+                            "default": "now"
+                        },
+                        "leasesContainer": {
+                            "type": "string",
+                            "title": "Leases Container",
+                            "description": "Container name for storing change feed leases (defaults to 'leases')",
+                            "default": "leases"
+                        },
+                        "maxItemsPerSnapshot": {
+                            "type": "integer",
+                            "title": "Max Items Per Snapshot",
+                            "description": "Maximum number of items to read in initial snapshot",
+                            "minimum": 1,
+                            "default": 10000
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "title": "Sink",
+                    "properties": {
+                        "upsertMode": {
+                            "type": "boolean",
+                            "title": "Upsert Mode",
+                            "description": "Whether to upsert (true) or insert (false) records",
+                            "default": true
+                        },
+                        "idField": {
+                            "type": "string",
+                            "title": "ID Field",
+                            "description": "Field to use as the document ID (defaults to 'id')",
+                            "default": "id"
+                        },
+                        "partitionKeyField": {
+                            "type": "string",
+                            "title": "Partition Key Field",
+                            "description": "Field to use as the partition key value"
+                        },
+                        "batchSize": {
+                            "type": "integer",
+                            "title": "Batch Size",
+                            "description": "Number of records to batch together for writing",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 25
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            ]
+        }
+    },
+    "required": ["type"]
+}

@@ -103,5 +103,10 @@ rustls = "0.22"
 async-nats = "0.38.0"
 nkeys = "0.3.0"
 
+# Azure Cosmos DB
+azure_core = "0.26"
+azure_data_cosmos = "0.26"
+azure_identity = "0.26"
+
 [build-dependencies]
 glob = "0.3"
